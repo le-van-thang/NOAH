@@ -10,9 +10,7 @@ services:
         strip_path: false
 
 plugins:
-
   - name: key-auth
-
   - name: rate-limiting
     config:
       minute: 10

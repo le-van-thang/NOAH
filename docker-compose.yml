@@ -1,5 +1,4 @@
 version: "3.9"
-
 services:
   mysql:
     image: mysql:8.0
@@ -7,12 +6,10 @@ services:
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
       MYSQL_DATABASE: webstore
-    ports:
-      - "3307:3306"
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
-      interval: 10s
-      retries: 5
+      interval: 5s
+      retries: 10
 
   postgres:
     image: postgres:15
@@ -21,34 +18,25 @@ services:
       POSTGRES_DB: finance_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
 
   rabbitmq:
     image: rabbitmq:3-management
     container_name: noah-rabbitmq
-    ports:
-      - "5672:5672"
-      - "15672:15672"
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 10s
-      retries: 5
+      interval: 5s
+      retries: 10
 
-  # Kong Gateway (Bảo mật Module 4)
   kong:
     image: kong:latest
     container_name: noah-gateway
     environment:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /usr/local/kong/declarative/kong.yml
-      KONG_PROXY_ACCESS_LOG: /dev/stdout
-      KONG_ADMIN_ACCESS_LOG: /dev/stdout
-      KONG_PROXY_LISTEN: 0.0.0.0:8000
     volumes:
       - ./backend/gateway/kong.yml:/usr/local/kong/declarative/kong.yml
     ports:
-      - "8000:8000" # Cổng duy nhất để truy cập hệ thống
+      - "8000:8000"
 
   inventory_sync:
     build: ./backend/inventory_sync
@@ -57,30 +45,31 @@ services:
       - ./docs:/app/input
       - ./processed:/app/processed
     depends_on:
-      mysql:
-        condition: service_healthy
+      mysql: { condition: service_healthy }
 
   order_api:
     build: ./backend/order_api
     container_name: noah-order_api
+    # ĐÃ XÓA PORTS ĐỂ TRÁNH XUNG ĐỘT VÀ ĐÚNG YÊU CẦU BẢO MẬT
     depends_on:
-      mysql:
-        condition: service_healthy
-      rabbitmq:
-        condition: service_healthy
+      mysql: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
 
   worker:
     build: ./backend/middleware_worker
     container_name: noah-worker
     depends_on:
-      rabbitmq:
-        condition: service_healthy
-      postgres:
-        condition: service_started
+      rabbitmq: { condition: service_healthy }
+      postgres: { condition: service_started }
 
   dashboard:
-    build: ./dashboard
+    build:
+      context: .
+      dockerfile: dashboard/Dockerfile
     container_name: noah-dashboard
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./docs:/data
     depends_on:
-      mysql:
-        condition: service_healthy
+      mysql: { condition: service_healthy }
