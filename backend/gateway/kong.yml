@@ -1,0 +1,24 @@
+_format_version: "2.1"
+
+services:
+  - name: order-service
+    url: http://order_api:8000
+    routes:
+      - name: order-route
+        paths:
+          - /api
+        strip_path: false
+
+plugins:
+
+  - name: key-auth
+
+  - name: rate-limiting
+    config:
+      minute: 10
+      policy: local
+
+consumers:
+  - username: student
+    keyauth_credentials:
+      - key: SECRET_API_KEY
