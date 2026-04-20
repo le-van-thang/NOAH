@@ -1,0 +1,3 @@
+pika
+pymysql
+psycopg2-binary

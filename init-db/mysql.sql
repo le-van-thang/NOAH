@@ -1,0 +1,11 @@
+CREATE TABLE IF NOT EXISTS products (
+  sku VARCHAR(50) PRIMARY KEY,
+  stock INT
+);
+
+CREATE TABLE IF NOT EXISTS orders (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  sku VARCHAR(50),
+  quantity INT,
+  status VARCHAR(20)
+);
