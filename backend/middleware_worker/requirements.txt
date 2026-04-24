@@ -1,3 +1,4 @@
 pika
-pymysql
 psycopg2-binary
+pymysql
+cryptography

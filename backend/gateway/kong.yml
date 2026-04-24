@@ -2,21 +2,44 @@ _format_version: "2.1"
 
 services:
   - name: order-service
-    url: http://order_api:8000
+    url: http://noah-order_api:8000/api/orders
     routes:
       - name: order-route
         paths:
-          - /api
-        strip_path: false
+          - /orders
+        strip_path: true
+        methods:
+          - POST
+          - GET # Allow GET so user doesn't see 404 in browser
+    plugins:
+      - name: key-auth
+      - name: rate-limiting
+        config:
+          minute: 10
+          policy: local
+          # Fixed deprecated fields
+          redis:
+            timeout: 2000
 
-plugins:
-  - name: key-auth
-  - name: rate-limiting
-    config:
-      minute: 10
-      policy: local
+  - name: report-service
+    url: http://noah-order_api:8000/api/report
+    routes:
+      - name: report-route
+        paths:
+          - /report
+        strip_path: true
+        methods:
+          - GET
+    plugins:
+      - name: key-auth
+      - name: rate-limiting
+        config:
+          minute: 10
+          policy: local
+          redis:
+            timeout: 2000
 
 consumers:
-  - username: student
+  - username: noah_admin
     keyauth_credentials:
-      - key: SECRET_API_KEY
+      - key: noah-secret-key

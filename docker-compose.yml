@@ -6,9 +6,13 @@ services:
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
       MYSQL_DATABASE: webstore
+    volumes:
+      - ./init-db/mysql.sql:/docker-entrypoint-initdb.d/01-tables.sql
+      - ./init-db/init.sql:/docker-entrypoint-initdb.d/02-data.sql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 5s
+      timeout: 5s
       retries: 10
 
   postgres:
@@ -18,13 +22,30 @@ services:
       POSTGRES_DB: finance_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+    volumes:
+      - ./init-db/postgres.sql:/docker-entrypoint-initdb.d/01-tables.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d finance_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:alpine
+    container_name: noah-redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   rabbitmq:
     image: rabbitmq:3-management
     container_name: noah-rabbitmq
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-      interval: 5s
+      interval: 10s
+      timeout: 10s
       retries: 10
 
   kong:
@@ -37,6 +58,9 @@ services:
       - ./backend/gateway/kong.yml:/usr/local/kong/declarative/kong.yml
     ports:
       - "8000:8000"
+    depends_on:
+      order_api:
+        condition: service_started
 
   inventory_sync:
     build: ./backend/inventory_sync
@@ -45,22 +69,32 @@ services:
       - ./docs:/app/input
       - ./processed:/app/processed
     depends_on:
-      mysql: { condition: service_healthy }
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   order_api:
     build: ./backend/order_api
     container_name: noah-order_api
-    # ĐÃ XÓA PORTS ĐỂ TRÁNH XUNG ĐỘT VÀ ĐÚNG YÊU CẦU BẢO MẬT
     depends_on:
-      mysql: { condition: service_healthy }
-      rabbitmq: { condition: service_healthy }
+      mysql:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   worker:
     build: ./backend/middleware_worker
     container_name: noah-worker
     depends_on:
-      rabbitmq: { condition: service_healthy }
-      postgres: { condition: service_started }
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
 
   dashboard:
     build:
@@ -71,5 +105,9 @@ services:
       - "8501:8501"
     volumes:
       - ./docs:/data
+      - ./dashboard/app.py:/app/app.py
     depends_on:
-      mysql: { condition: service_healthy }
+      mysql:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
