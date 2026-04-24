@@ -1,0 +1,7 @@
+product_id,quantity
+100,50
+101,10
+102,-5
+103,invalid
+104,25
+,10
