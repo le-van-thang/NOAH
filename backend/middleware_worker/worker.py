@@ -6,9 +6,9 @@ import json
 import time
 
 # Configs
-MYSQL_CONFIG = {"host": "mysql", "user": "root", "password": "", "database": "webstore", "cursorclass": pymysql.cursors.DictCursor}
-PG_CONFIG = "host=postgres dbname=finance_db user=postgres password=postgres"
-RABBIT_HOST = "rabbitmq"
+MYSQL_CONFIG = {"host": "noah-mysql", "user": "root", "password": "", "database": "webstore", "cursorclass": pymysql.cursors.DictCursor}
+PG_CONFIG = "host=noah-postgres dbname=finance_db user=postgres password=postgres"
+RABBIT_HOST = "noah-rabbitmq"
 
 def retry_connection(func, service_name, max_retries=30, delay=5):
     for i in range(max_retries):

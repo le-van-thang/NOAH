@@ -35,7 +35,7 @@ def get_report():
 
 def get_stock(sku):
     try:
-        r = redis.Redis(host="redis", port=6379, decode_responses=True)
+        r = redis.Redis(host="noah-redis", port=6379, decode_responses=True)
         val = r.get(f"stock:{sku}")
         return val if val else 0
     except: return "N/A"
@@ -49,7 +49,8 @@ with st.sidebar:
     
     if st.button("🚀 Seed 20k Orders (PENDING)", use_container_width=True):
         try:
-            conn = pymysql.connect(host="mysql", user="root", password="", database="webstore")
+            # Sửa host thành noah-mysql cho chắc chắn
+            conn = pymysql.connect(host="noah-mysql", user="root", password="", database="webstore")
             with conn.cursor() as cur:
                 # DÙNG TRẠNG THÁI 'PENDING' ĐỂ CÓ THỂ SYNC SANG POSTGRES
                 data = [(100 + (i % 200), (i % 5) + 1, (i % 1000), 'PENDING') for i in range(20000)]
@@ -57,7 +58,7 @@ with st.sidebar:
                 conn.commit()
                 st.success("Đã nạp 20,000 đơn hàng ở trạng thái PENDING.")
             conn.close()
-        except Exception as e: st.error(e)
+        except Exception as e: st.error(f"Lỗi kết nối MySQL: {e}")
 
     if st.button("🔄 Sync All to Postgres", use_container_width=True):
         with st.spinner("Đang đồng bộ khối lượng lớn..."):
@@ -100,7 +101,14 @@ with t1:
             
             df_view = df.iloc[(current_page-1)*rows_per_page : current_page*rows_per_page].copy()
             df_view['Status'] = df_view.apply(lambda r: "✅ OK" if r['web_total'] == r['finance_total'] else "❌ MISMATCH", axis=1)
-            st.dataframe(df_view, use_container_width=True, height=400)
+            
+            # Sửa lỗi AttributeError: 'Styler' object has no attribute 'applymap'
+            def color_status(val):
+                if "OK" in val: return "color: #00ff87"
+                if "MISMATCH" in val: return "color: #ef4444"
+                return ""
+            
+            st.dataframe(df_view.style.map(color_status, subset=['Status']), use_container_width=True, height=400)
     with col2:
         st.markdown("##### 📉 Distribution")
         fig = px.pie(values=[f_sum, max(0, w_sum-f_sum)], names=['Synced', 'Pending'], hole=0.7)

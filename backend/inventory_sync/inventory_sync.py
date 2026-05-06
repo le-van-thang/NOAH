@@ -10,7 +10,7 @@ import re
 INPUT_FILE = "/app/input/inventory.csv"
 PROCESSED_DIR = "/app/processed"
 DB_CONFIG = {
-    "host": "mysql",
+    "host": "noah-mysql",
     "user": "root",
     "password": "",
     "database": "webstore",
