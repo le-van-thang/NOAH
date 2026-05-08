@@ -1,5 +1,6 @@
 version: "3.9"
 services:
+  # --- DỊCH VỤ CƠ SỞ DỮ LIỆU ---
   mysql:
     image: mysql:8.0
     container_name: noah-mysql
@@ -48,6 +49,7 @@ services:
       timeout: 10s
       retries: 10
 
+  # --- CỔNG TRUY CẬP API (KONG GATEWAY) ---
   kong:
     image: kong:latest
     container_name: noah-gateway
@@ -57,17 +59,18 @@ services:
     volumes:
       - ./backend/gateway/kong.yml:/usr/local/kong/declarative/kong.yml
     ports:
-      - "8000:8000"
+      - "8000:8000" # Mở cổng 8000 ra ngoài Internet
     depends_on:
       order_api:
         condition: service_started
 
+  # --- CÁC MICROSERVICES ---
   inventory_sync:
     build: ./backend/inventory_sync
     container_name: noah-inventory_sync
     volumes:
-      - ./docs:/app/input
-      - ./processed:/app/processed
+      - ./docs:/app/input # Thư mục chứa file CSV đầu vào
+      - ./processed:/app/processed # Thư mục chứa file đã xử lý xong
     depends_on:
       mysql:
         condition: service_healthy
@@ -96,13 +99,16 @@ services:
       mysql:
         condition: service_healthy
 
+  # --- GIAO DIỆN QUẢN TRỊ (DASHBOARD) ---
   dashboard:
     build:
       context: .
       dockerfile: dashboard/Dockerfile
     container_name: noah-dashboard
+    env_file:
+      - ./dashboard/.env
     ports:
-      - "8501:8501"
+      - "8501:8501" # Mở cổng 8501 để truy cập Web Dashboard
     volumes:
       - ./docs:/data
       - ./dashboard/app.py:/app/app.py

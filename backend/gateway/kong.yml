@@ -1,6 +1,7 @@
 _format_version: "2.1"
 
 services:
+  # --- DỊCH VỤ ĐẶT HÀNG (ORDER SERVICE) ---
   - name: order-service
     url: http://noah-order_api:8000/api/orders
     routes:
@@ -10,17 +11,19 @@ services:
         strip_path: true
         methods:
           - POST
-          - GET # Allow GET so user doesn't see 404 in browser
+          - GET # Cho phép GET để người dùng không bị lỗi 404 khi vào trình duyệt
     plugins:
+      # Plugin 1: Xác thực API Key (Bắt buộc phải có apikey trên Header)
       - name: key-auth
+      # Plugin 2: Giới hạn tần suất (Rate Limiting) - Chống tấn công DDoS/Spam
       - name: rate-limiting
         config:
-          minute: 10
+          minute: 10 # Giới hạn tối đa 10 yêu cầu mỗi phút
           policy: local
-          # Fixed deprecated fields
           redis:
             timeout: 2000
 
+  # --- DỊCH VỤ BÁO CÁO (REPORT SERVICE) ---
   - name: report-service
     url: http://noah-order_api:8000/api/report
     routes:
@@ -39,7 +42,8 @@ services:
           redis:
             timeout: 2000
 
+# --- DANH SÁCH NGƯỜI DÙNG HỢP LỆ (CONSUMERS) ---
 consumers:
   - username: noah_admin
     keyauth_credentials:
-      - key: noah-secret-key
+      - key: noah-secret-key # Đây chính là mã bí mật (API Key) để truy cập hệ thống

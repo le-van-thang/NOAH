@@ -5,3 +5,4 @@ pika
 redis
 psycopg2-binary
 cryptography
+pusher
